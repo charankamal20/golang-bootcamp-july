@@ -101,14 +101,14 @@ type Worker struct {
 
 // start booking requests
 func (w *Worker) Start(ctx context.Context) {
-	defer w.wg.Done()
-
-	for {
+	done := false
+	for !done {
 		select {
 		case userID, ok := <-w.requests:
 			if !ok {
 				// channel closed, worker should exit
-				return
+				done = true
+				break
 			}
 
 			result := w.ts.BookTicket(userID)
@@ -117,13 +117,15 @@ func (w *Worker) Start(ctx context.Context) {
 			select {
 			case w.results <- result:
 			case <-ctx.Done():
-				return
+				done = true
 			}
 
 		case <-ctx.Done():
-			return
+			done = true
 		}
 	}
+
+	w.wg.Done()
 }
 
 type WorkerPool struct {
