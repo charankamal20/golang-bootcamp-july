@@ -207,18 +207,20 @@ func main() {
 		for result := range workerPool.results {
 			atomic.AddInt32(&processedRequests, 1)
 
-			if result.Success {
-				atomic.AddInt32(&successfulBookings, 1)
-				if processedRequests%5000 == 0 {
-					log.Printf("✅ Progress: %d/%d requests processed, %d tickets booked",
-						atomic.LoadInt32(&processedRequests),
-						totalRequests,
-						atomic.LoadInt32(&successfulBookings))
-				}
-			} else {
+			if !result.Success {
 				atomic.AddInt32(&failedBookings, 1)
+				continue
+			}
+
+			atomic.AddInt32(&successfulBookings, 1)
+			if processedRequests%5000 == 0 {
+				log.Printf("✅ Progress: %d/%d requests processed, %d tickets booked",
+					atomic.LoadInt32(&processedRequests),
+					totalRequests,
+					atomic.LoadInt32(&successfulBookings))
 			}
 		}
+
 		resultsDone <- true
 	}()
 
